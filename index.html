@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <!-- CÁC THẺ META ÉP THÀNH APP THẬT 100% -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="StudyMate">
+  <meta name="theme-color" content="#FDFBF7">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3048/3048122.png">
+  
+  <title>StudyMate - Data-Driven Tracker</title>
+
+  <!-- THƯ VIỆN ONESIGNAL PUSH NOTIFICATION -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.Deferred = window.Deferred || [];
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "e60f9cb6-8b65-4e57-8aef-88c5beab5a7a",
+      });
+    });
+  </script>
+
+  <link rel="manifest" href="./manifest.json">
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* CSS BIẾN WEB THÀNH APP NATIVE */
+    body { 
+      font-family: 'Quicksand', sans-serif; 
+      background: linear-gradient(135deg, #FDFBF7 0%, #F4ECE1 100%); 
+      color: #334155; 
+      /* KHÓA BÔI ĐEN VÀ MENU CHUỘT PHẢI */
+      -webkit-user-select: none; user-select: none; 
+      -webkit-touch-callout: none;
+      /* CHỐNG KÉO DÃN MÀN HÌNH NẢY LÊN XUỐNG CỦA TRÌNH DUYỆT */
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent; 
+    }
+    input, textarea { -webkit-user-select: auto; user-select: auto; } /* Chỉ cho phép gõ chữ ở ô nhập */
+    
+    .hidden { display: none !important; }
+    .font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 16px 40px -10px rgba(160, 140, 130, 0.2); }
+    .soft-pill { box-shadow: 0 4px 15px -3px rgba(180, 160, 150, 0.15); }
+    @keyframes gentleFloat { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-6px) scale(1.02); } }
+    @keyframes angryShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    @keyframes rubBelly { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1) translateY(-5px); } }
+    .animate-float { animation: gentleFloat 3.5s ease-in-out infinite; }
+    .animate-angry { animation: angryShake 0.4s ease-in-out infinite; }
+    .animate-rub { animation: rubBelly 0.6s ease-in-out; }
+    ::-webkit-scrollbar { height: 4px; width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #E5DDD3; border-radius: 999px; }
+    /* Padding an toàn cho tai thỏ iPhone */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 24px); padding-top: env(safe-area-inset-top, 0px); }
+    .flip-card { background-color: transparent; perspective: 1000px; }
+    .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+    .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+    .flip-card-front, .flip-card-back { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 1rem; }
+    .flip-card-front { background-color: #ffffff; z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #e2e8f0; }
+    .flip-card-back { background-color: #ecfdf5; transform: rotateY(180deg); display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #a7f3d0; }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center items-start pt-4 pb-28 selection:bg-[#E8C5B8] selection:text-slate-900 overflow-x-hidden pb-safe">
+  
+  <audio id="snd-ting" src="https://actions.google.com/sounds/v1/ui/positive_notification_bounce.ogg" preload="auto"></audio>
+  <audio id="snd-ring" src="https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg" preload="auto"></audio>
+
+  <div class="w-full max-w-md mx-auto px-4">
+    <!-- MÀN 1: ĐĂNG NHẬP -->
+    <div id="step-auth" class="glass-card p-8 rounded-[36px] text-center space-y-6">
+      <div class="py-2"><svg class="w-20 h-20 mx-auto animate-float drop-shadow-sm text-[#B4CBB3]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C9.243 2 7 4.243 7 7v3H6c-1.103 0-2 .897-2 2v8c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2v-8c0-1.103-.897-2-2-2h-1V7c0-2.757-2.243-5-5-5zM9 7c0-1.654 1.346-3 3-3s3 1.346 3 3v3H9V7zm7 12H8v-6h8v6z"/></svg></div>
+      <div>
+        <h1 class="text-3xl font-extrabold font-jakarta text-slate-800 tracking-tight">StudyMate</h1>
+        <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-[0.2em]">Data-Driven Tracker</p>
+      </div>
+      <div class="flex bg-slate-100/80 p-1 rounded-2xl gap-1">
+        <button onclick="switchAuthTab('LOGIN')" id="tab-login" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white text-slate-800 shadow-sm transition-all border border-slate-200">Đăng Nhập</button>
+        <button onclick="switchAuthTab('REGISTER')" id="tab-register" class="flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-800 transition-all border border-transparent">Đăng Ký</button>
+      </div>
+      <div class="text-left space-y-3 pt-2">
+        <div class="space-y-1"><label class="block text-[11px] font-bold text-slate-500 pl-1 uppercase tracking-wide">Email:</label><input id="auth-email" type="email" placeholder="Nhập email..." class="w-full px-4 py-3.5 bg-white/90 border border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#B4CBB3] shadow-sm transition-all"></div>
+        <div class="space-y-1 relative"><label class="block text-[11px] font-bold text-slate-500 pl-1 uppercase tracking-wide">Mật khẩu:</label><input id="auth-pass" type="password" placeholder="Nhập mật khẩu..." class="w-full px-4 py-3.5 bg-white/90 border border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#B4CBB3] shadow-sm transition-all pr-12"><button type="button" onclick="toggleVis('auth-pass')" class="absolute right-4 top-[29px] text-xs font-bold opacity-50 text-slate-500">HIỆN</button></div>
+        <div id="auth-repass-field" class="hidden space-y-1 relative"><label class="block text-[11px] font-bold text-slate-500 pl-1 uppercase tracking-wide">Nhập lại mật khẩu:</label><input id="auth-repass" type="password" placeholder="Xác nhận mật khẩu..." class="w-full px-4 py-3.5 bg-white/90 border border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#B4CBB3] shadow-sm transition-all pr-12"><button type="button" onclick="toggleVis('auth-repass')" class="absolute right-4 top-[29px] text-xs font-bold opacity-50 text-slate-500">HIỆN</button></div>
+      </div>
+      <div id="auth-forgot-btn" class="text-right pt-1"><button onclick="forgotPassword()" class="text-[11px] font-bold text-slate-400 hover:text-emerald-600 transition-all">Quên mật khẩu?</button></div>
+      <button onclick="handleAuth()" id="auth-btn-submit" class="w-full py-4 bg-[#B4CBB3] hover:bg-[#A3BFA2] text-slate-900 font-extrabold font-jakarta text-sm rounded-2xl soft-pill transition-all mt-2">Vào Ứng Dụng</button>
+      <p id="auth-status" class="text-red-500 text-xs font-bold mt-2"></p>
+    </div>
+
+    <!-- MÀN 2: THÔNG TIN CÁ NHÂN -->
+    <div id="step-info" class="hidden glass-card p-8 rounded-[36px] space-y-5">
+      <div class="text-center"><h2 class="text-lg font-bold font-jakarta text-slate-800">Thông tin học sinh</h2></div>
+      <div class="space-y-3 pt-2">
+        <div class="space-y-1"><label class="block text-xs font-bold text-slate-600 pl-1">Họ và Tên:</label><input id="input-name" type="text" class="w-full px-4 py-3 bg-white/90 border border-slate-200/70 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#B4CBB3]"></div>
+        <div class="space-y-1"><label class="block text-xs font-bold text-slate-600 pl-1">Trường học:</label><input id="input-school" type="text" class="w-full px-4 py-3 bg-white/90 border border-slate-200/70 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#B4CBB3]"></div>
+        <div class="space-y-1"><label class="block text-xs font-bold text-slate-600 pl-1">Lớp:</label><input id="input-class" type="text" class="w-full px-4 py-3 bg-white/90 border border-slate-200/70 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#B4CBB3]"></div>
+      </div>
+      <button onclick="saveInfoAndStartTest()" class="w-full py-3.5 bg-[#B4CBB3] text-slate-800 font-bold font-jakarta text-sm rounded-2xl soft-pill transition-all mt-2">Làm bài test Chẩn đoán</button>
+    </div>
+
+    <!-- MÀN 3: BÀI TEST -->
+    <div id="step-quiz" class="hidden glass-card p-6 rounded-[36px] space-y-6 text-center">
+      <div class="flex justify-between items-center text-xs font-bold"><span class="px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full font-jakarta">Câu <span id="quiz-progress-text">1/12</span></span></div>
+      <div class="relative w-full bg-slate-100 h-3 rounded-full overflow-hidden shadow-inner"><div id="quiz-progress-bar" class="absolute top-0 left-0 bg-gradient-to-r from-[#93C5FD] to-[#3B82F6] h-full rounded-full transition-all duration-500 w-[8%]"></div></div>
+      <div class="py-8 px-5 bg-white border border-slate-200 rounded-[28px] shadow-sm relative"><h3 id="quiz-question-title" class="font-bold text-[14px] text-slate-800 leading-relaxed mt-2">Đang tải câu hỏi...</h3></div>
+      <div class="grid grid-cols-1 gap-2.5">
+        <button onclick="handleDiagAnswer(1)" class="py-3.5 px-4 text-left font-bold text-xs bg-white border border-slate-200 hover:border-emerald-300 rounded-2xl transition-all active:scale-95 text-slate-600 shadow-sm">1. Hoàn toàn không</button>
+        <button onclick="handleDiagAnswer(2)" class="py-3.5 px-4 text-left font-bold text-xs bg-white border border-slate-200 hover:border-emerald-300 rounded-2xl transition-all active:scale-95 text-slate-600 shadow-sm">2. Hiếm khi</button>
+        <button onclick="handleDiagAnswer(3)" class="py-3.5 px-4 text-left font-bold text-xs bg-white border border-slate-200 hover:border-emerald-300 rounded-2xl transition-all active:scale-95 text-slate-600 shadow-sm">3. Thỉnh thoảng</button>
+        <button onclick="handleDiagAnswer(4)" class="py-3.5 px-4 text-left font-bold text-xs bg-white border border-slate-200 hover:border-emerald-300 rounded-2xl transition-all active:scale-95 text-slate-600 shadow-sm">4. Khá thường xuyên</button>
+        <button onclick="handleDiagAnswer(5)" class="py-3.5 px-4 text-left font-bold text-xs bg-white border border-slate-200 hover:border-emerald-300 rounded-2xl transition-all active:scale-95 text-slate-700 shadow-sm">5. Luôn luôn đúng</button>
+      </div>
+    </div>
+
+    <!-- MÀN HÌNH CHÍNH -->
+    <div id="step-main" class="hidden w-full space-y-4">
+      <div class="flex justify-between items-center bg-white/85 backdrop-blur-xl p-4 rounded-[28px] mb-4 border border-slate-200/60 shadow-sm sticky top-2 z-20 transition-all">
+        <button onclick="toggleSidebar()" class="w-11 h-11 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 transition-all shadow-sm hover:bg-slate-100 active:scale-95">
+           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="text-center"><h2 class="font-extrabold text-[15px] font-jakarta text-slate-800 tracking-tight" id="top-header-name">StudyMate</h2></div>
+        <div class="flex items-center gap-1.5 bg-gradient-to-br from-[#FFF3B0] to-[#FFE066] px-3.5 py-2 rounded-2xl border border-amber-200 shadow-sm text-sm font-black text-amber-900">
+           <svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#FFC107" stroke="#FF9800" stroke-width="2"/><text x="12" y="16" font-size="12" text-anchor="middle" fill="#E65100" font-weight="900">S</text></svg>
+           <span id="header-coins">50</span>
+        </div>
+      </div>
+
+      <!-- TAB PET -->
+      <div id="tab-pet" class="tab-content block space-y-4">
+        <div class="glass-card p-6 rounded-[36px] text-center relative overflow-hidden space-y-4">
+          <div class="flex justify-between items-center text-xs font-bold border-b border-slate-200/60 pb-3">
+            <span class="text-slate-600 font-bold uppercase tracking-wider text-[10px]">Trạng thái Pet</span>
+            <span id="st-display-status" class="px-3 py-1.5 rounded-full text-[10px] font-extrabold shadow-sm bg-[#B9D3BF] text-emerald-800">...</span>
+          </div>
+          <div class="relative py-10 flex justify-center">
+            <div id="main-pet-container" class="relative w-44 h-44 animate-float cursor-pointer transition-all" onclick="petClickAction()">
+              <div id="layer-aura" class="absolute inset-0 w-full h-full scale-[1.6] opacity-70 pointer-events-none"></div>
+              <div id="layer-body" class="absolute inset-0 w-full h-full drop-shadow-xl"></div>
+              <div id="layer-neck" class="absolute inset-0 w-full h-full pointer-events-none z-20"></div>
+              <div id="layer-face" class="absolute inset-0 w-full h-full z-30 drop-shadow-sm"></div>
+              <div id="layer-eyes" class="absolute inset-0 w-full h-full pointer-events-none z-40"></div>
+              <div id="layer-head" class="absolute inset-0 w-full h-full pointer-events-none z-50"></div>
+              <div id="layer-hair" class="absolute inset-0 w-full h-full pointer-events-none z-50"></div>
+            </div>
+          </div>
+          <div><h3 id="st-pet-title" class="font-extrabold font-jakarta text-lg text-slate-800">Cục Bông</h3></div>
+          <div class="bg-white/80 p-4 rounded-3xl border border-slate-200 shadow-sm text-left space-y-4">
+            <div>
+              <div class="flex justify-between text-[11px] font-extrabold text-slate-600 mb-1.5"><span>Năng lượng</span><span id="pet-energy-text">50%</span></div>
+              <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden shadow-inner"><div id="pet-energy-bar" class="bg-gradient-to-r from-[#93C5FD] to-[#3B82F6] h-full rounded-full transition-all duration-700" style="width: 50%;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] font-extrabold text-slate-600 mb-1.5"><span>Hạnh phúc</span><span id="pet-happy-text">50%</span></div>
+              <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden shadow-inner"><div id="pet-happy-bar" class="bg-gradient-to-r from-[#FDA4AF] to-[#F43F5E] h-full rounded-full transition-all duration-700" style="width: 50%;"></div></div>
+            </div>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200 shadow-sm text-left">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-[11px] uppercase tracking-wider text-slate-600">🎒 Túi Đồ Ăn (Balo)</h4>
+              <button onclick="nav('shop'); switchShop('FOOD');" class="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded-lg">Mua thêm</button>
+            </div>
+            <div id="inventory-list" class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB POMODORO -->
+      <div id="tab-pomo" class="tab-content hidden space-y-4">
+        <div class="glass-card p-6 rounded-[36px] text-center space-y-5">
+          <h3 class="font-extrabold text-base text-slate-800 font-jakarta">Bộ Đếm Giờ Học Tập</h3>
+          <div class="grid grid-cols-2 gap-3 text-left">
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Môn học</label>
+              <select id="pomo-subject" class="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-extrabold outline-none shadow-sm appearance-none">
+                <option value="Toán">📐 Toán</option><option value="Văn">📖 Văn</option><option value="NgoaiNgu">🌍 Ngoại Ngữ</option>
+                <option value="Sinh">🧬 Sinh</option><option value="Lý">⚡ Lý</option><option value="Hóa">🧪 Hóa</option>
+                <option value="Sử">📜 Sử</option><option value="Địa">🗺️ Địa</option><option value="Tin">💻 Tin</option>
+                <option value="KinhTe">⚖️ KT & PL</option>
+              </select>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Thời gian (Phút)</label>
+              <input id="pomo-time" type="number" min="1" value="25" class="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-extrabold outline-none shadow-sm" onchange="changePomoTime()" onkeyup="changePomoTime()">
+            </div>
+          </div>
+          <div class="flex bg-slate-100 p-1 rounded-2xl gap-1">
+            <button onclick="switchPomoMode('POMO')" id="tab-pomo-mode" class="flex-1 py-2 text-[11px] font-bold rounded-xl bg-white text-slate-800 shadow-sm transition-all border border-slate-200">Pomodoro</button>
+            <button onclick="switchPomoMode('STOPWATCH')" id="tab-stopwatch-mode" class="flex-1 py-2 text-[11px] font-bold rounded-xl text-slate-500 transition-all border border-transparent">Luyện Đề (Đếm Xuôi)</button>
+          </div>
+          <div id="pomo-view-pomo" class="space-y-4 pt-2">
+            <div class="flex justify-center items-center gap-6">
+              <button onclick="adjPomo(-5)" class="w-12 h-12 rounded-2xl bg-white border border-slate-100 shadow-sm text-slate-600 hover:bg-slate-50 font-bold text-xl transition-all active:scale-95">-</button>
+              <div id="pomodoro-clock" class="text-[72px] font-jakarta font-black text-slate-800 tracking-tighter tabular-nums drop-shadow-sm">25:00</div>
+              <button onclick="adjPomo(5)" class="w-12 h-12 rounded-2xl bg-white border border-slate-100 shadow-sm text-slate-600 hover:bg-slate-50 font-bold text-xl transition-all active:scale-95">+</button>
+            </div>
+            <p class="text-[10px] text-rose-600 font-bold px-4 border border-rose-200 bg-rose-50 p-2.5 rounded-xl text-left shadow-sm">
+              🚨 <span class="font-black">ANTI-CHEAT THÔNG MINH:</span> Thoát app -> Tự dừng & gửi tin nhắn hỏi han. Có 5 phút để tiếp tục, nếu không sẽ bị trừ 5 Xu.
+            </p>
+            <div class="flex gap-2 pt-2">
+              <button id="btn-start-pomo" onclick="togglePomodoro()" class="flex-1 py-4 bg-[#B4CBB3] text-slate-900 font-extrabold text-sm rounded-2xl shadow-sm hover:scale-[0.98] transition-all">BẮT ĐẦU TẬP TRUNG</button>
+              <button onclick="stopPomodoroSafely()" class="px-5 py-4 bg-rose-100 text-rose-700 font-bold text-xs rounded-2xl shadow-sm hover:scale-[0.98] transition-all">Dừng Cấp Cứu</button>
+            </div>
+          </div>
+          <div id="pomo-view-stopwatch" class="hidden space-y-4 pt-2">
+            <div id="stopwatch-clock" class="text-6xl font-jakarta font-black my-6 text-slate-800 tracking-tighter tabular-nums">00:00:00</div>
+            <div class="flex gap-2 pt-2">
+              <button id="btn-start-sw" onclick="toggleStopwatch()" class="flex-1 py-4 bg-[#DFD1C4] text-slate-900 font-extrabold text-sm rounded-2xl shadow-sm hover:scale-[0.98] transition-all">BẮT ĐẦU</button>
+              <button onclick="resetStopwatch()" class="px-5 py-4 bg-slate-100 text-slate-600 font-bold text-xs rounded-2xl shadow-sm hover:scale-[0.98] transition-all">Đặt Lại</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB THỐNG KÊ LỊCH TRÌNH -->
+      <div id="tab-schedule" class="tab-content hidden space-y-4">
+        <div class="glass-card p-4 rounded-[36px] space-y-4 text-left">
+          <div class="flex flex-wrap bg-slate-100 p-1 rounded-2xl gap-1">
+            <button onclick="switchSched('TODO')" id="btn-sch-todo" class="flex-1 py-1.5 text-[10px] font-bold rounded-lg bg-white shadow-sm text-slate-800 transition-all border border-slate-200">To-Do</button>
+            <button onclick="switchSched('GOAL')" id="btn-sch-goal" class="flex-1 py-1.5 text-[10px] font-bold rounded-lg text-slate-500 transition-all border border-transparent">Mục Tiêu</button>
+            <button onclick="switchSched('MONTH')" id="btn-sch-month" class="flex-1 py-1.5 text-[10px] font-bold rounded-lg text-slate-500 transition-all border border-transparent">Lịch Thi</button>
+            <button onclick="switchSched('TIME')" id="btn-sch-time" class="flex-1 py-1.5 text-[10px] font-bold rounded-lg text-slate-500 transition-all border border-transparent">TKB</button>
+          </div>
+          <div id="sch-todo-view" class="space-y-3">
+             <div id="daily-todo-grid" class="space-y-2 max-h-[45vh] overflow-y-auto pr-1"></div>
+             <div class="flex gap-2"><input id="new-task-inp" type="text" class="flex-1 border border-slate-200 p-3 text-xs rounded-2xl outline-none shadow-sm focus:border-emerald-300" placeholder="Viết nhiệm vụ mới..."><button onclick="addTodoTask()" class="bg-[#B4CBB3] px-5 rounded-2xl font-black text-slate-800 hover:scale-95 transition-all">+</button></div>
+          </div>
+          <div id="sch-goal-view" class="hidden space-y-4">
+             <div class="bg-white p-4 rounded-2xl border space-y-3">
+               <button onclick="saveWeeklyGoals()" class="w-full py-2 bg-[#DFD1C4] text-slate-800 font-bold text-xs rounded-xl shadow-sm">LƯU MỤC TIÊU MỚI</button>
+               <div class="grid grid-cols-2 gap-2 text-xs max-h-[25vh] overflow-y-auto pr-1 pb-2" id="goal-inputs-container"></div>
+               <button onclick="claimWeeklyReward()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-xs">📊 Chấm Điểm & Nhận Thưởng Tuần</button>
+             </div>
+             <div class="bg-white p-4 rounded-2xl border shadow-sm space-y-4">
+               <div class="overflow-x-auto pb-2"><div id="stats-bar-chart" class="flex gap-3 items-end h-32 border-b pb-1 min-w-[300px]"></div></div>
+               <div class="flex items-center gap-4 pt-3"><div id="pie-chart" class="w-20 h-20 rounded-full shadow-sm border border-slate-200 shrink-0"></div><div id="pie-legend" class="text-[10px] font-bold text-slate-600 space-y-1.5 flex-1 max-h-24 overflow-y-auto pr-1"></div></div>
+             </div>
+          </div>
+          <div id="sch-month-view" class="hidden space-y-3">
+             <div class="flex justify-between items-center font-bold text-xs bg-white p-2.5 rounded-2xl border shadow-sm">
+                <button onclick="changeMonth(-1)" class="p-1.5 px-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all">◀</button>
+                <span id="month-label" class="font-jakarta text-sm">Tháng ...</span>
+                <button onclick="changeMonth(1)" class="p-1.5 px-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all">▶</button>
+             </div>
+             <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold mb-1 mt-3 text-slate-400"><div>CN</div><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div></div>
+             <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs font-bold"></div>
+             <div class="mt-5 p-4 bg-rose-50 border border-rose-100 rounded-[24px] space-y-3">
+               <input id="exam-name" type="text" class="w-full text-xs p-3 bg-white border border-rose-100 rounded-xl outline-none" placeholder="Tên kỳ thi...">
+               <input id="exam-date" type="date" class="w-full text-xs p-3 bg-white border border-rose-100 rounded-xl outline-none">
+               <button onclick="addExam()" class="w-full bg-rose-200 py-3 rounded-xl font-bold text-xs text-rose-800">Lưu Lịch Thi</button>
+             </div>
+             <div id="exam-list" class="space-y-2 mt-3 text-[11px] font-medium text-rose-600"></div>
+          </div>
+          <div id="sch-time-view" class="hidden space-y-4">
+             <div class="space-y-2 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+               <select id="tkb-day" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none mb-2 appearance-none"><option value="Thứ 2">Thứ 2</option><option value="Thứ 3">Thứ 3</option><option value="Thứ 4">Thứ 4</option><option value="Thứ 5">Thứ 5</option><option value="Thứ 6">Thứ 6</option><option value="Thứ 7">Thứ 7</option><option value="Chủ Nhật">Chủ Nhật</option></select>
+               <div class="flex gap-2">
+                 <input id="tkb-time" type="text" placeholder="18:00" class="w-24 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none font-bold text-center">
+                 <input id="tkb-subj" type="text" placeholder="Tên môn..." class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none font-bold">
+                 <button onclick="addTKB()" class="bg-[#B4CBB3] px-4 rounded-xl font-black text-slate-800">+</button>
+               </div>
+             </div>
+             <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
+               <div class="grid grid-cols-7 gap-1.5 text-center min-w-[320px]"><div class="font-bold text-[10px] bg-slate-100 py-1.5 rounded text-slate-600">T2</div><div class="font-bold text-[10px] bg-slate-100 py-1.5 rounded text-slate-600">T3</div><div class="font-bold text-[10px] bg-slate-100 py-1.5 rounded text-slate-600">T4</div><div class="font-bold text-[10px] bg-slate-100 py-1.5 rounded text-slate-600">T5</div><div class="font-bold text-[10px] bg-slate-100 py-1.5 rounded text-slate-600">T6</div><div class="font-bold text-[10px] bg-slate-100 py-1.5 rounded text-slate-600">T7</div><div class="font-bold text-[10px] bg-rose-100 py-1.5 rounded text-rose-600">CN</div></div>
+               <div class="grid grid-cols-7 gap-1.5 mt-1.5 min-w-[320px]" id="tkb-grid-view"></div>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB FLASHCARD 3D -->
+      <div id="tab-library" class="tab-content hidden space-y-4">
+        <div class="glass-card p-6 rounded-[36px] space-y-5 text-left">
+          <div id="lib-main" class="space-y-4">
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+               <input id="fc-front" type="text" placeholder="Mặt trước (Câu hỏi)" class="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none shadow-sm">
+               <input id="fc-back" type="text" placeholder="Mặt sau (Đáp án)" class="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none shadow-sm">
+               <button onclick="addManualFC()" class="w-full py-2 bg-[#DFD1C4] text-slate-800 font-bold rounded-xl text-xs">Thêm vào bộ tạm</button>
+               <div id="fc-draft-list" class="space-y-1 text-[10px] max-h-20 overflow-y-auto text-slate-600"></div>
+               <button onclick="saveManualFC()" class="w-full py-3 bg-[#B4CBB3] font-bold rounded-xl text-xs mt-2">Lưu Thành Bộ Mới</button>
+            </div>
+            <textarea id="lib-text" rows="4" placeholder="Dán văn bản tự động tạo Flashcard..." class="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium outline-none shadow-sm"></textarea>
+            <button onclick="genLibFromText()" class="w-full py-3 bg-slate-800 text-white font-bold rounded-2xl">Trích Xuất Tự Động</button>
+            <div id="saved-lib-list" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+          </div>
+          <div id="lib-play" class="hidden space-y-4">
+            <div class="flex justify-between items-center text-xs font-bold"><span id="lib-play-prog" class="text-emerald-800 bg-emerald-100 px-3.5 py-1.5 rounded-full font-black">...</span><button onclick="closeLibPlay()" class="text-rose-600 bg-rose-50 px-4 py-1.5 rounded-full">Quay lại</button></div>
+            <div id="lib-play-content" class="min-h-[220px] bg-transparent text-center flex flex-col justify-center gap-4 perspective-1000"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB SHOP -->
+      <div id="tab-shop" class="tab-content hidden space-y-4">
+        <div class="glass-card p-5 rounded-[36px] text-left">
+          <div class="flex justify-between items-center pb-3 px-1">
+            <h3 class="font-extrabold text-base font-jakarta text-slate-800">Cửa Hàng</h3>
+            <span class="text-sm font-black text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl border shadow-sm"><span id="shop-coin-display"></span> Xu</span>
+          </div>
+          <div class="flex bg-slate-100 p-1 rounded-2xl mb-4 gap-1">
+            <button onclick="switchShop('FOOD')" id="btn-shop-food" class="flex-1 py-2 text-[10px] font-bold bg-white rounded-xl shadow-sm text-slate-800 transition-all border border-slate-200">Thức Ăn</button>
+            <button onclick="switchShop('ACC')" id="btn-shop-acc" class="flex-1 py-2 text-[10px] font-bold text-slate-500 transition-all border border-transparent">Phụ Kiện</button>
+            <button onclick="switchShop('PETS')" id="btn-shop-pets" class="flex-1 py-2 text-[10px] font-bold text-slate-500 transition-all border border-transparent">Màu Sắc</button>
+          </div>
+          <div id="shop-grid" class="grid grid-cols-2 gap-2 text-xs max-h-[55vh] overflow-y-auto pr-1 pb-4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR & BOTT NAV -->
+  <div id="sidebar-drawer" class="fixed inset-y-0 left-0 w-[280px] bg-[#FDFBF7] border-r border-slate-200 shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="p-6 pt-16">
+      <h3 id="sb-name" class="font-bold text-base font-jakarta text-slate-800">Tên bạn</h3>
+    </div>
+    <div class="p-6 mt-auto space-y-3">
+      <button onclick="logOut()" class="w-full text-center p-4 bg-rose-50 border border-rose-100 rounded-2xl text-xs font-bold text-rose-600">Đăng xuất</button>
+    </div>
+  </div>
+  <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden transition-opacity"></div>
+
+  <div id="bottom-nav-bar" class="hidden fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-xl border-t border-slate-200 px-1 py-3 z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-safe rounded-t-[36px]">
+    <div class="max-w-md mx-auto flex justify-between items-center px-3">
+      <button onclick="nav('pet')" id="nav-pet" class="nav-btn w-[20%] flex flex-col items-center text-emerald-600 scale-110 transition-all"><svg class="w-6 h-6 mb-1 drop-shadow-sm" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.1l-10 7.5v11.3a1 1 0 0 0 1 1h5v-7h6v7h5a1 1 0 0 0 1-1v-11.3l-10-7.5z"/></svg><span class="text-[8px] font-extrabold font-jakarta">PET</span></button>
+      <button onclick="nav('pomo')" id="nav-pomo" class="nav-btn w-[20%] flex flex-col items-center text-slate-400 transition-all"><svg class="w-6 h-6 mb-1 opacity-60" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M13 7h-2v6h6v-2h-4z"/></svg><span class="text-[8px] font-extrabold font-jakarta">HỌC</span></button>
+      <button onclick="nav('schedule')" id="nav-schedule" class="nav-btn w-[20%] flex flex-col items-center text-slate-400 transition-all"><svg class="w-6 h-6 mb-1 opacity-60" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2V6c0-1.103-.897-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg><span class="text-[8px] font-extrabold font-jakarta">THỐNG KÊ</span></button>
+      <button onclick="nav('library')" id="nav-library" class="nav-btn w-[20%] flex flex-col items-center text-slate-400 transition-all"><svg class="w-6 h-6 mb-1 opacity-60" viewBox="0 0 24 24" fill="currentColor"><path d="M20 3H4c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2zM4 19V5h16l.001 14H4z"/><path d="M6 7h12v2H6zm0 4h12v2H6zm0 4h8v2H6z"/></svg><span class="text-[8px] font-extrabold font-jakarta">FLASHCARD</span></button>
+      <button onclick="nav('shop')" id="nav-shop" class="nav-btn w-[20%] flex flex-col items-center text-slate-400 transition-all"><svg class="w-6 h-6 mb-1 opacity-60" viewBox="0 0 24 24" fill="currentColor"><path d="M21.922 7.042l-1.423-4.269A2.003 2.003 0 0 0 18.601 1.5H5.399a2.002 2.002 0 0 0-1.898 1.273L2.078 7.042A2 2 0 0 0 2 7.5V11c0 1.103.897 2 2 2h1v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7h1c1.103 0 2-.897 2-2V7.5c0-.158-.027-.312-.078-.458zM17 20H7v-7h10v7zM4.093 3.5h15.814l1.167 3.5H2.926l1.167-3.5z"/></svg><span class="text-[8px] font-extrabold font-jakarta">SHOP</span></button>
+    </div>
+  </div>
+
+  <!-- NHÚNG FIREBASE SDK PHIÊN BẢN MỚI (V10) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    // Cấu hình Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCpefCZhWH6e-MljeFS87zeMAwgmdvrkfo",
+      authDomain: "studymate-fb6c4.firebaseapp.com",
+      projectId: "studymate-fb6c4",
+      storageBucket: "studymate-fb6c4.firebasestorage.app",
+      messagingSenderId: "888747328455",
+      appId: "1:888747328455:web:cfa8f4d9e3739f89468fe2",
+      measurementId: "G-7QK656REYR"
+    };
+
+    // Khởi tạo Firebase
+    const app = initializeApp(firebaseConfig);
+    window.db = getDatabase(app); 
+  </script>
+
+  <!-- Đăng ký Service Worker chống gian lận -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
+
+  <!-- GỌI FILE APP.JS ĐỂ KHỞI ĐỘNG -->
+  <script src="./app.js"></script>
+
+</body>
+</html>
